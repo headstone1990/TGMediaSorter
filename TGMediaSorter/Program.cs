@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using TGMediaSorter;
 
+StreamWriter wTelegramLogs = new StreamWriter("WTelegram.log", true, Encoding.UTF8) { AutoFlush = true };
+WTelegram.Helpers.Log = (lvl, str) => wTelegramLogs.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{"TDIWE!"[lvl]}] {str}");
+
 using var client = new WTelegram.Client(Config);
 var myself = await client.LoginUserIfNeeded();
 Console.WriteLine($"We are logged-in as {myself} (id {myself.id})");
