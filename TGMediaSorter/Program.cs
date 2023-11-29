@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using TGMediaSorter;
@@ -21,11 +22,11 @@ static string Config(string what)
         case "api_id": return authData.ApiId.ToString();
         case "api_hash": return authData.ApiHash;
         case "phone_number": return authData.PhoneNumber;
-        case "verification_code": Console.Write("Code: "); return Console.ReadLine();
+        case "verification_code": Console.Write("Code: "); return Console.ReadLine() ?? string.Empty;
         case "first_name": return "John";      // if sign-up is required
         case "last_name": return "Doe";        // if sign-up is required
         case "password": return authData.Password;     // if user has enabled 2FA
-        default: return null;                  // let WTelegramClient decide the default config
+        default: return null!;                  // let WTelegramClient decide the default config
     }
 }
 
