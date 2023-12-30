@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using TL;
@@ -14,13 +13,16 @@ public class TGSession : IDisposable
     private Client _wTelegramClient;
     private VerificationCode _getVerificationCode;
     private User _myself;
+    private Client? _wTelegramClient;
+    private readonly VerificationCode _verificationCodeCallback;
+    private User? _myself;
 
-    public TGSession(VerificationCode getVerificationCode)
+    public TGSession(VerificationCode verificationCodeCallback)
     {
-        _getVerificationCode = getVerificationCode;
+        _verificationCodeCallback = verificationCodeCallback;
     }
 
-    public User Myself => _myself;
+    public User Myself => _myself!;
 
     internal async Task Init ()
     {
@@ -37,7 +39,7 @@ public class TGSession : IDisposable
             case "api_id": return authData.ApiId.ToString();
             case "api_hash": return authData.ApiHash;
             case "phone_number": return authData.PhoneNumber;
-            case "verification_code": return _getVerificationCode();
+            case "verification_code": return _verificationCodeCallback();
             case "first_name": return "John";      // if sign-up is required
             case "last_name": return "Doe";        // if sign-up is required
             case "password": return authData.Password;     // if user has enabled 2FA
@@ -61,6 +63,6 @@ public class TGSession : IDisposable
 
     public void Dispose()
     {
-        _wTelegramClient.Dispose();
+        _wTelegramClient?.Dispose();
     }
 }
