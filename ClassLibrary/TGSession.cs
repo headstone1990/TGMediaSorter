@@ -41,6 +41,7 @@ public class TGSession : IDisposable
             case "first_name": return "John";      // if sign-up is required
             case "last_name": return "Doe";        // if sign-up is required
             case "password": return authData.Password;     // if user has enabled 2FA
+            case "session_pathname": return Path.Combine(Environment.CurrentDirectory, "WTelegram.session");
             default: return null!;                  // let WTelegramClient decide the default config
         }
     }
