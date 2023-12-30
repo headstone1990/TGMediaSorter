@@ -12,9 +12,9 @@ public class TGSessionsFactory : IDisposable
         _verificationCodeCallback = verificationCode;
     }
 
-    public async Task<TGSession> CreateTGSession()
+    public async Task<TGSession> CreateTGSession(AuthenticatorData authData)
     {
-        var session = new TGSession(_verificationCodeCallback);
+        var session = new TGSession(_verificationCodeCallback, authData);
         lock (_sessionsListLock)
         {
             _tgSessionsList.Add(session);
