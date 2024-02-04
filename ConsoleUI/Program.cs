@@ -11,10 +11,11 @@ WTelegramLogsConfigurator.ConfigureLogs();
 var authData = GetAuthData();
 
 var services = new ServiceCollection()
-    .AddTransient<ITGSession>(_ => new TGSession(verificationCodeCallback, authData));
+    .AddScoped<ITGSession>(_ => new TGSession(verificationCodeCallback, authData));
 using var serviceProvider = services.BuildServiceProvider();
+using var scope = serviceProvider.CreateScope();
 
-var session = serviceProvider.GetRequiredService<ITGSession>();
+var session = scope.ServiceProvider.GetRequiredService<ITGSession>();
 
 Console.WriteLine(session.Myself.first_name);
 
