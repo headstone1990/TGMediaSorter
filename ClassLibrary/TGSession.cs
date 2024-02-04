@@ -1,33 +1,26 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using ClassLibrary.Abstractions;
 using TL;
 using WTelegram;
 
 namespace ClassLibrary;
 
-public delegate string VerificationCode();
+public delegate string VerificationCodeCallback();
 
-public class TGSession : IDisposable
+public class TGSession : IDisposable, ITGSession
 {
-    private Client? _wTelegramClient;
-    private readonly VerificationCode _verificationCodeCallback;
-    private User? _myself;
+    private readonly Client _wTelegramClient;
+    private readonly VerificationCodeCallback _verificationCodeCallbackCallback;
     private readonly AuthenticatorData _authData;
 
-    public TGSession(VerificationCode verificationCodeCallback, AuthenticatorData authData)
+    public TGSession(VerificationCodeCallback verificationCodeCallbackCallback, AuthenticatorData authData)
     {
         _authData = authData;
-        _verificationCodeCallback = verificationCodeCallback;
-    }
-
-    public User Myself => _myself!;
-
-    internal async Task Init ()
-    {
+        _verificationCodeCallbackCallback = verificationCodeCallbackCallback;
         _wTelegramClient = new Client(Config);
-        _myself = await _wTelegramClient.LoginUserIfNeeded();
+        Task.Run(() => _wTelegramClient.LoginUserIfNeeded()).Wait();
     }
+
+    public User Myself => _wTelegramClient.User;
     
     
     private string Config(string what)
@@ -37,7 +30,7 @@ public class TGSession : IDisposable
             case "api_id": return _authData.ApiId.ToString();
             case "api_hash": return _authData.ApiHash;
             case "phone_number": return _authData.PhoneNumber;
-            case "verification_code": return _verificationCodeCallback();
+            case "verification_code": return _verificationCodeCallbackCallback();
             case "first_name": return "John";      // if sign-up is required
             case "last_name": return "Doe";        // if sign-up is required
             case "password": return _authData.Password;     // if user has enabled 2FA
@@ -48,6 +41,7 @@ public class TGSession : IDisposable
 
     public void Dispose()
     {
-        _wTelegramClient?.Dispose();
+        _wTelegramClient.Dispose();
     }
+    
 }

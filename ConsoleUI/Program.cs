@@ -1,18 +1,24 @@
 ﻿using ClassLibrary;
+using ClassLibrary.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 
-VerificationCode verificationCode = GetVerificationCode;
+VerificationCodeCallback verificationCodeCallback = GetVerificationCode;
 
 WTelegramLogsConfigurator.ConfigureLogs();
-var factory = TGSessionsFactory.Create(verificationCode);
-var session = await factory.CreateTGSession(GetAuthData());
+var authData = GetAuthData();
+
+var services = new ServiceCollection()
+    .AddTransient<ITGSession>(_ => new TGSession(verificationCodeCallback, authData));
+using var serviceProvider = services.BuildServiceProvider();
+
+var session = serviceProvider.GetRequiredService<ITGSession>();
+
 Console.WriteLine(session.Myself.first_name);
 
 Console.ReadLine();
-factory.Dispose();
 return;
 
 string GetVerificationCode()
