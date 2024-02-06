@@ -1,4 +1,5 @@
 ﻿using ClassLibrary.Abstractions;
+using DotNext.Threading;
 using TL;
 using WTelegram;
 
@@ -8,15 +9,18 @@ public delegate string VerificationCodeCallback();
 
 public class TGSession : ITGSession, IDisposable, IAsyncDisposable
 {
-    private readonly Lazy<Task<Client>> _wTelegramClient;
+    private readonly AsyncLazy<Client> _wTelegramClient;
     private readonly VerificationCodeCallback _verificationCodeCallbackCallback;
     private readonly AuthenticatorData _authData;
+    private readonly CancellationToken _token;
 
     public TGSession(VerificationCodeCallback verificationCodeCallbackCallback, AuthenticatorData authData)
     {
+        CancellationTokenSource cancelTokenSource = new CancellationTokenSource(); 
+        _token = cancelTokenSource.Token;
         _authData = authData;
         _verificationCodeCallbackCallback = verificationCodeCallbackCallback;
-        _wTelegramClient = new Lazy<Task<Client>>(async () =>
+        _wTelegramClient = new AsyncLazy<Client>(async (token) =>
         {
             Client client = new Client(Config);
             await client.LoginUserIfNeeded();
@@ -28,7 +32,7 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
 
     public async Task<User> GetCurrentUserAsync()
     {
-        var client = await _wTelegramClient.Value;
+        var client = await _wTelegramClient.WithCancellation(_token);
         return client.User;
     }
 
@@ -51,13 +55,13 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
 
     public void Dispose()
     {
-        var client = Task.Run(() => _wTelegramClient.Value).GetAwaiter().GetResult();
+        var client = Task.Run(() => _wTelegramClient.WithCancellation(_token), _token).GetAwaiter().GetResult();
         client.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
-        var client = await _wTelegramClient.Value;
+        var client = await _wTelegramClient.WithCancellation(_token);
         client.Dispose();
     }
 }
