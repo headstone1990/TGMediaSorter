@@ -6,7 +6,7 @@ namespace ClassLibrary;
 
 public delegate string VerificationCodeCallback();
 
-public class TGSession : ITGSession
+public class TGSession : ITGSession, IDisposable, IAsyncDisposable
 {
     private readonly Lazy<Task<Client>> _wTelegramClient;
     private readonly VerificationCodeCallback _verificationCodeCallbackCallback;
@@ -47,5 +47,17 @@ public class TGSession : ITGSession
             case "session_pathname": return Path.Combine(Environment.CurrentDirectory, "WTelegram.session");
             default: return null!;                  // let WTelegramClient decide the default config
         }
+    }
+
+    public void Dispose()
+    {
+        var client = Task.Run(() => _wTelegramClient.Value).GetAwaiter().GetResult();
+        client.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        var client = await _wTelegramClient.Value;
+        client.Dispose();
     }
 }
