@@ -6,9 +6,9 @@ namespace ClassLibrary;
 
 public delegate string VerificationCodeCallback();
 
-public class TGSession : IDisposable, ITGSession
+public class TGSession : ITGSession
 {
-    private readonly Client _wTelegramClient;
+    private readonly Lazy<Task<Client>> _wTelegramClient;
     private readonly VerificationCodeCallback _verificationCodeCallbackCallback;
     private readonly AuthenticatorData _authData;
 
@@ -16,13 +16,23 @@ public class TGSession : IDisposable, ITGSession
     {
         _authData = authData;
         _verificationCodeCallbackCallback = verificationCodeCallbackCallback;
-        _wTelegramClient = new Client(Config);
-        Task.Run(() => _wTelegramClient.LoginUserIfNeeded()).Wait();
+        _wTelegramClient = new Lazy<Task<Client>>(async () =>
+        {
+            Client client = new Client(Config);
+            await client.LoginUserIfNeeded();
+            return client;
+        });
     }
 
-    public User Myself => _wTelegramClient.User;
-    
-    
+
+
+    public async Task<User> GetCurrentUserAsync()
+    {
+        var client = await _wTelegramClient.Value;
+        return client.User;
+    }
+
+
     private string Config(string what)
     {
         switch (what)
@@ -38,10 +48,4 @@ public class TGSession : IDisposable, ITGSession
             default: return null!;                  // let WTelegramClient decide the default config
         }
     }
-
-    public void Dispose()
-    {
-        _wTelegramClient.Dispose();
-    }
-    
 }
