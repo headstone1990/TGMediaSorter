@@ -13,18 +13,16 @@ WTelegramLogsConfigurator.ConfigureLogs();
 var authData = GetAuthData();
 
 IServiceCollection services = new ServiceCollection()
-    .AddScoped<IUpdateHandler, UpdateHandler>()
     .AddScoped<ITGSession>(x => new TGSession(
         verificationCodeCallback, 
-        authData,
-        x.GetRequiredService<IUpdateHandler>()))
+        authData))
     .AddTransient<IForwarder, Forwarder>();
 
 await using ServiceProvider serviceProvider = services.BuildServiceProvider();
 using IServiceScope scope = serviceProvider.CreateScope();
 
 var forwarder = scope.ServiceProvider.GetRequiredService<IForwarder>();
-await forwarder.Forward(-1001979529376, 5379626745);
+await forwarder.Forward(5379626745, 1);
 
 Console.ReadLine();
 return;

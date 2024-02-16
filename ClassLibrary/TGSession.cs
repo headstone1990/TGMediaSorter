@@ -15,25 +15,33 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
     private readonly VerificationCodeCallback _verificationCodeCallbackCallback;
     private readonly AuthenticatorData _authData;
     private readonly CancellationToken _token;
-    private readonly IUpdateHandler _updateHandler;
 
-    public TGSession(VerificationCodeCallback verificationCodeCallbackCallback, AuthenticatorData authData, IUpdateHandler updateHandler)
+    public TGSession(VerificationCodeCallback verificationCodeCallbackCallback, AuthenticatorData authData)
     {
         CancellationTokenSource cancelTokenSource = new CancellationTokenSource();
         _token = cancelTokenSource.Token;
         _authData = authData;
-        _updateHandler = updateHandler;
         _verificationCodeCallbackCallback = verificationCodeCallbackCallback;
         _wTelegramClient = new AsyncLazy<Client>(async (token) =>
         {
             Client client = new Client(Config);
-            client.OnUpdate += _updateHandler.Client_OnUpdate;
             await client.LoginUserIfNeeded();
             return client;
         });
     }
 
 
+    public async Task RegisterUpdateHandler(Func<UpdatesBase, Task> handler)
+    {
+        var client = await _wTelegramClient.WithCancellation(_token);
+        client.OnUpdate += handler;
+    }
+    
+    public async Task UnregisterUpdateHandler(Func<UpdatesBase, Task> handler)
+    {
+        var client = await _wTelegramClient.WithCancellation(_token);
+        client.OnUpdate -= handler;
+    }
     public async Task<User> GetCurrentUserAsync()
     {
         var client = await _wTelegramClient.WithCancellation(_token);
@@ -49,9 +57,12 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
         var dialogs = await client.Messages_GetAllDialogs();
         dialogs.CollectUsersChats(users, chats);
         InputPeer output;
-        
-        
-        if (peerId < 0)
+
+        if (peerId == 1)
+        {
+            output = InputPeer.Self;
+        }
+        else if (peerId < 0)
         {
             var peerIdText = peerId.ToString();
             if (peerIdText.Length != 14)
@@ -80,80 +91,37 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
         return history.Count;
     }
 
-    public async Task<bool> ForwardAsync(InputPeer fromPeer, InputPeer toPeer, int addOffset, int limit)
+    public async Task ForwardAsync(InputPeer fromPeer, InputPeer toPeer, int offset)
     {
-        var client = await _wTelegramClient.WithCancellation(_token);
-        var messageBases = await client.Messages_GetHistory(fromPeer, add_offset: addOffset, limit: limit);
-        if (messageBases.Messages.Length == 0)
-        {
-            return false;
-        }
-
-        for (int i = messageBases.Messages.Length - 1; i >= 0; i--)
-        {
-            if (messageBases.Messages[i] is Message message)
-            {
-                await client.SendMessageAsync(toPeer, message.message, message.media?.ToInputMedia(),
-                    entities: message.entities);
-            }
-
-            await Task.Delay(5000, _token);
-        }
-
-        return true;
-    }
-
-    public async Task TestMethodAsync()
-    {
-        const int page = 1;
-        
-        Dictionary<long, User> users = new();
-        Dictionary<long, ChatBase> chats = new();
-        var client = await _wTelegramClient.WithCancellation(_token);
-        
-
-        var dialogs = await client.Messages_GetAllDialogs();
-        dialogs.CollectUsersChats(users, chats);
-
-        InputPeer peer = users[5379626745];
-        
-        var initialMessagesDownload = await client.Messages_GetHistory(peer);
-        var count = initialMessagesDownload.Count;
-        int addOffset = count - page;
-        // int addOffset = 60149;
         while (true)
         {
-            Console.WriteLine();
-            var messageBases = await client.Messages_GetHistory(peer, add_offset: addOffset, limit: page);
-            if (messageBases.Messages.Length == 0) break;
+            var client = await _wTelegramClient.WithCancellation(_token);
+            var messageBases = await client.Messages_GetHistory(fromPeer, offset_id: offset, add_offset: -100);
+            if (messageBases.Messages.Length == 0)
+            {
+                return;
+            }
 
             for (int i = messageBases.Messages.Length - 1; i >= 0; i--)
             {
-                if (messageBases.Messages[i] is Message message)
-                {
-                    message.message = $"{message.message} \nId in source: {message.ID}";
-                    await client.SendMessageAsync(InputPeer.Self, message.message, message.media?.ToInputMedia(),
-                        entities: message.entities);
-                }
-                // await client.Messages_ForwardMessages(
-                //     peer,
-                //     [messageBases.Messages[i].ID],
-                //     [WTelegram.Helpers.RandomLong()],
-                //     InputPeer.Self,
-                //     drop_author: true);
+                if (messageBases.Messages[i] is not Message message) continue;
+                
+                await client.SendMessageAsync(toPeer, message.message, message.media?.ToInputMedia(),
+                    entities: message.entities);
                 
                 await Task.Delay(5000, _token);
             }
 
-            addOffset -= page;
-            var updatedHistory = await client.Messages_GetHistory(peer);
-            var updatedCount = updatedHistory.Count;
-            if (count != updatedCount)
-            {
-                addOffset += updatedCount - count;
-                count = updatedCount;
-            }
+            offset = messageBases.Messages[0].ID + 1;
         }
+    }
+    
+    public async Task<List<long>> GetMessagesPeerId(int messageId)
+    {
+        var client = await _wTelegramClient.WithCancellation(_token);
+        var messages = await client.Messages_GetMessages(messageId);
+        var output = messages.Messages.Select(message => message.Peer.ID).ToList();
+        return output;
     }
 
     private string Config(string what)
