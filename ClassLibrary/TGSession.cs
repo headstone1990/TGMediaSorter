@@ -36,7 +36,7 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
         return client.User;
     }
 
-    public async Task<InputPeer> GetPeerAsync(long peerId)
+    private async Task<InputPeer> GetPeerAsync(long peerId)
     {
         Dictionary<long, User> users = new();
         Dictionary<long, ChatBase> chats = new();
@@ -72,11 +72,13 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
         return output;
     }
     
-    public async Task ForwardAsync(InputPeer sourcePeer, InputPeer destinationPeer, int offset)
+    public async Task ForwardAsync(long sourcePeerId, long destinationPeerId, int offset)
     {
+        var client = await _wTelegramClient.WithCancellation(_token);
+        var sourcePeer = await GetPeerAsync(sourcePeerId);
+        var destinationPeer = await GetPeerAsync(destinationPeerId);
         while (true)
         {
-            var client = await _wTelegramClient.WithCancellation(_token);
             var messageBases = await client.Messages_GetHistory(sourcePeer, offset_id: offset, add_offset: -100);
             if (messageBases.Messages.Length == 0)
             {

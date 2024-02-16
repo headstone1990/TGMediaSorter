@@ -14,9 +14,6 @@ public class Forwarder : IForwarder
 
     public async Task ForwardAsync(long sourcePeerId, long destinationPeerId)
     {
-        var fromPeer = await _tgSession.GetPeerAsync(sourcePeerId);
-        var toPeer = await _tgSession.GetPeerAsync(destinationPeerId);
-        
-        await _tgSession.ForwardAsync(fromPeer, toPeer, 1);
+        await _tgSession.ForwardAsync(sourcePeerId, destinationPeerId, 1);
     } 
 }
