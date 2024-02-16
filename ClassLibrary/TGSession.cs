@@ -72,12 +72,12 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
         return output;
     }
     
-    public async Task ForwardAsync(InputPeer fromPeer, InputPeer toPeer, int offset)
+    public async Task ForwardAsync(InputPeer sourcePeer, InputPeer destinationPeer, int offset)
     {
         while (true)
         {
             var client = await _wTelegramClient.WithCancellation(_token);
-            var messageBases = await client.Messages_GetHistory(fromPeer, offset_id: offset, add_offset: -100);
+            var messageBases = await client.Messages_GetHistory(sourcePeer, offset_id: offset, add_offset: -100);
             if (messageBases.Messages.Length == 0)
             {
                 return;
@@ -87,7 +87,7 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
             {
                 if (messageBases.Messages[i] is not Message message) continue;
                 
-                await client.SendMessageAsync(toPeer, message.message, message.media?.ToInputMedia(),
+                await client.SendMessageAsync(destinationPeer, message.message, message.media?.ToInputMedia(),
                     entities: message.entities);
                 
                 await Task.Delay(5000, _token);

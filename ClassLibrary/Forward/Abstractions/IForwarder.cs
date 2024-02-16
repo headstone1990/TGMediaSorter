@@ -2,5 +2,5 @@
 
 public interface IForwarder
 {
-    Task ForwardAsync(long fromPeerId, long toPeerId);
+    Task ForwardAsync(long sourcePeerId, long destinationPeerId);
 }

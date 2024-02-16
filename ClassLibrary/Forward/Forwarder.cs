@@ -12,10 +12,10 @@ public class Forwarder : IForwarder
         _tgSession = tgSession;
     }
 
-    public async Task ForwardAsync(long fromPeerId, long toPeerId)
+    public async Task ForwardAsync(long sourcePeerId, long destinationPeerId)
     {
-        var fromPeer = await _tgSession.GetPeerAsync(fromPeerId);
-        var toPeer = await _tgSession.GetPeerAsync(toPeerId);
+        var fromPeer = await _tgSession.GetPeerAsync(sourcePeerId);
+        var toPeer = await _tgSession.GetPeerAsync(destinationPeerId);
         
         await _tgSession.ForwardAsync(fromPeer, toPeer, 1);
     } 
