@@ -29,19 +29,7 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
             return client;
         });
     }
-
-
-    public async Task RegisterUpdateHandler(Func<UpdatesBase, Task> handler)
-    {
-        var client = await _wTelegramClient.WithCancellation(_token);
-        client.OnUpdate += handler;
-    }
     
-    public async Task UnregisterUpdateHandler(Func<UpdatesBase, Task> handler)
-    {
-        var client = await _wTelegramClient.WithCancellation(_token);
-        client.OnUpdate -= handler;
-    }
     public async Task<User> GetCurrentUserAsync()
     {
         var client = await _wTelegramClient.WithCancellation(_token);
@@ -83,14 +71,7 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
 
         return output;
     }
-
-    public async Task<int> GetMessagesCountAsync(InputPeer peer)
-    {
-        var client = await _wTelegramClient.WithCancellation(_token);
-        var history = await client.Messages_GetHistory(peer);
-        return history.Count;
-    }
-
+    
     public async Task ForwardAsync(InputPeer fromPeer, InputPeer toPeer, int offset)
     {
         while (true)
@@ -116,14 +97,6 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
         }
     }
     
-    public async Task<List<long>> GetMessagesPeerId(int messageId)
-    {
-        var client = await _wTelegramClient.WithCancellation(_token);
-        var messages = await client.Messages_GetMessages(messageId);
-        var output = messages.Messages.Select(message => message.Peer.ID).ToList();
-        return output;
-    }
-
     private string Config(string what)
     {
         switch (what)

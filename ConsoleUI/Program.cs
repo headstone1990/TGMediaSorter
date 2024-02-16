@@ -22,7 +22,7 @@ await using ServiceProvider serviceProvider = services.BuildServiceProvider();
 using IServiceScope scope = serviceProvider.CreateScope();
 
 var forwarder = scope.ServiceProvider.GetRequiredService<IForwarder>();
-await forwarder.Forward(5379626745, 1);
+await forwarder.ForwardAsync(5379626745, 1);
 
 Console.ReadLine();
 return;
