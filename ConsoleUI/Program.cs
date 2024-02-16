@@ -1,9 +1,10 @@
 ﻿using ClassLibrary;
 using ClassLibrary.Abstractions;
+using ClassLibrary.Forward;
+using ClassLibrary.Forward.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using TL;
 
 
 VerificationCodeCallback verificationCodeCallback = GetVerificationCode;
@@ -12,15 +13,18 @@ WTelegramLogsConfigurator.ConfigureLogs();
 var authData = GetAuthData();
 
 IServiceCollection services = new ServiceCollection()
-    .AddScoped<ITGSession>(_ => new TGSession(verificationCodeCallback, authData));
+    .AddScoped<IUpdateHandler, UpdateHandler>()
+    .AddScoped<ITGSession>(x => new TGSession(
+        verificationCodeCallback, 
+        authData,
+        x.GetRequiredService<IUpdateHandler>()))
+    .AddTransient<IForwarder, Forwarder>();
 
 await using ServiceProvider serviceProvider = services.BuildServiceProvider();
 using IServiceScope scope = serviceProvider.CreateScope();
 
-ITGSession session = scope.ServiceProvider.GetRequiredService<ITGSession>();
-
-User currentUser = await session.GetCurrentUserAsync();
-Console.WriteLine(currentUser.first_name);  
+var forwarder = scope.ServiceProvider.GetRequiredService<IForwarder>();
+await forwarder.Forward(-1001979529376, 5379626745);
 
 Console.ReadLine();
 return;
