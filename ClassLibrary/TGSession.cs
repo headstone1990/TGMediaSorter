@@ -79,7 +79,12 @@ public class TGSession : ITGSession, IDisposable, IAsyncDisposable
         var destinationPeer = await GetPeerAsync(destinationPeerId);
         while (true)
         {
-            var messageBases = await client.Messages_GetHistory(sourcePeer, offset_id: offset, add_offset: -100);
+            var messageBases = await client.Messages_GetHistory(
+                sourcePeer,
+                offset_id: offset,
+                add_offset: -100,
+                limit: 100);
+            
             if (messageBases.Messages.Length == 0)
             {
                 return;
